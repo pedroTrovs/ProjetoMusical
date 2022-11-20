@@ -4,22 +4,23 @@
 #include <stdlib.h>
 #include <locale.h>
 
-#define MAX 50
-
-int processNote(char note);
-void gravar_arquivo(i_song musica[]);
-int ler_arquivo(i_song musica[MAX]);
+#define MAX 50 
 
 //declação da struct song
-struct song
+typedef struct song
 {
 	char title[30];
 	double f[50]; //frequencias
 	double d[50]; //duração de uma nota
 	int size;
-}i_song;
+} i_song;
 
-int main()
+
+int processNote(char note);
+void gravar_arquivo(i_song musica);
+int ler_arquivo(i_song musica[MAX]);
+
+int main(int argc, char** argv)
 {
 	setlocale(LC_ALL, "Portuguese");
 
@@ -27,16 +28,14 @@ int main()
 
 	int const baseRatio = 500;//duração base em milisegundos
 
-	int n, i, pos, oct, count = -1, s, aux = 0;
+	int n, i, pos, oct, count = -1, s, aux = 0, len_vet;
 
 	char note, type;
 
-	//declaração do vetor de musicas salvas;
+	//declaração do vetor de musicas salvas
 	i_song musicas[MAX];
-	//chamada da função de leitura/ guardando o numero de musicas salvas
-	int len_vet = ler_arquivo(musicas);
 
-	i_song songs[2];
+	i_song songs;
 
 	/*
 	Música teste:
@@ -99,20 +98,23 @@ int main()
 								pos --;//nesse caso ele vai pra posição anterior a do vetor de notas
 							break;
 					}
-					songs[count].f[i] = baseNotes[pos]*pow(2, oct); //calculo da oitava, setar a frequencia na oitava exata
+					songs.f[i] = baseNotes[pos]*pow(2, oct); //calculo da oitava, setar a frequencia na oitava exata
 
 					printf("\nInsert duration ratio: ");
 					scanf("%lf", &ratio);
-					songs[count].d[i] = ratio * baseRatio;//escolha da duração da nota
+					songs.d[i] = ratio * baseRatio;//escolha da duração da nota
 				}
 
 				fflush(stdin);
 				printf("Songs's title: ");
-				gets(songs[count].title);
-				songs[count].size = n;//guarda quantas notas tem a musica
+				gets(songs.title);
+				songs.size = n;//guarda quantas notas tem a musica
+				gravar_arquivo(songs);
 				break;
-
-			case '2': //consultar músicas
+			case '2':
+				printf("\tLista de musicas\n");
+				len_vet = ler_arquivo(musicas);
+				printf("ola %i", len_vet);
 				for(i = 0; i < len_vet; i++)
 				{
 					printf("\nT�tulo: %s - Posi��o: %i\n", musicas[i].title, i);
@@ -121,6 +123,7 @@ int main()
 				break;
 
 			case '3': //tocar músicas
+				ler_arquivo(musicas);
 				printf("Posi��o da m�sica: ");
 				scanf("%i", &s);//peaga a posição da música
 
@@ -216,21 +219,17 @@ int processNote(char note)
 	return r;
 }
 
-void gravar_arquivo(i_song musica[])
+void gravar_arquivo(i_song musica)
 {
-	int i;
-	int len_vet = sizeof(musica) - 1; //pego o tamanho do vetor
-
 	FILE * arq;
 
 	// abre o arquivo para escrita no modo append
-	arq = fopen("musicas.bin", "ab");
+	arq = fopen("musicas.txt", "ab");
 
 	if(arq != NULL)
 	{
-		for(i = 0; i < len_vet; i++)
-			// escreve cada elemento do vetor no arquivo
-			fwrite(&musica[i], sizeof(i_song), 1, arq);
+		// escreve cada elemento do vetor no arquivo
+		fwrite(&musica, sizeof(i_song), 1, arq);
 		fclose(arq);
 	}
 	else //se caso ele não consiga abrir o arquivo para gravação
@@ -243,28 +242,18 @@ void gravar_arquivo(i_song musica[])
 int ler_arquivo(i_song musica[MAX])
 {
 	// abre o arquivo para leitura
-	FILE * arq = fopen("musicas.bin", "rb");
+	FILE * arq = fopen("musicas.txt", "rb");
+	i_song song;
 
 	if(arq != NULL)
 	{
 		int indice = 0;
-		while(1)
+		while(fread(&song, sizeof(i_song), 1, arq) == 1)
 		{
-			i_song song;
-
-			// fread ler os dados
-			// retorna a quantidade de elementos lidos com sucesso
-			size_t r = fread(&song, sizeof(i_song), 1, arq);
-
-			// se não houver mais dados para pegar ele sai do loop
-			if(r < 1)
-				break;
-			else
-				musica[indice++] = song;
+			musica[indice++] = song;
 		}
 		fclose(arq); // fecha o arquivo
-		//retorna o numero de elementos achados no arquivo
-		return indice;
+		return indice;//retorna o numero de elementos achados no arquivo
 	}
 	else
 	{
