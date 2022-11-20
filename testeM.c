@@ -19,6 +19,7 @@ typedef struct song
 int processNote(char note);
 void gravar_arquivo(i_song musica);
 int ler_arquivo(i_song musica[MAX]);
+void reescrever(i_song musica[], int tam);
 
 int main(int argc, char** argv)
 {
@@ -36,12 +37,6 @@ int main(int argc, char** argv)
 	i_song musicas[MAX];
 
 	i_song songs;
-
-	/*
-	Música teste:
-	double notasS[2][24] = {{9.0, 11.0, 0.0, 0.0, 2.0, 4.0, 4.0, 7.0, 2.0, 0.0, 11.0, 9.0, 9.0, 11.0, 0.0, 0.0, 2.0, 4.0, 4.0, 7.0, 9.0, 7.0, 11.0, 9.0},
-				{3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0}};
-	*/
 	
 	double ratio; //duração de uma nota
 
@@ -57,7 +52,6 @@ int main(int argc, char** argv)
 		switch(op)
 		{
 			case '1': //criar música
-				count++;
 				printf("\nCreate song");
 				printf("\nNumber of notes: ");
 				scanf("%i", &n);
@@ -114,7 +108,6 @@ int main(int argc, char** argv)
 			case '2':
 				printf("\tLista de musicas\n");
 				len_vet = ler_arquivo(musicas);
-				printf("ola %i", len_vet);
 				for(i = 0; i < len_vet; i++)
 				{
 					printf("\nT�tulo: %s - Posi��o: %i\n", musicas[i].title, i);
@@ -125,7 +118,7 @@ int main(int argc, char** argv)
 			case '3': //tocar músicas
 				ler_arquivo(musicas);
 				printf("Posi��o da m�sica: ");
-				scanf("%i", &s);//peaga a posição da música
+				scanf("%i", &s);//pega a posição da música
 
 				system("cls");
 				
@@ -144,40 +137,24 @@ int main(int argc, char** argv)
 					Beep(musicas[s].f[i], musicas[s].d[i]);
 				}
 				break;
-			/*
-			case '4': //música teste
-				if(aux < 1)
-					for(i = 0; i < 24; i++)
-					{
-						notasS[0][i] = baseNotes[(int)notasS[0][i]]*pow(2, notasS[1][i]);
-					}
-				aux++;
-				Beep(notasS[0][0], 500);
-				Beep(notasS[0][1], 500);
-				Beep(notasS[0][2], 1000);
-				Beep(notasS[0][3], 500);
-				Beep(notasS[0][4], 500);
-				Beep(notasS[0][5], 1000);
-				Beep(notasS[0][6], 500);
-				Beep(notasS[0][7], 500);
-				Beep(notasS[0][8], 1000);
-				Beep(notasS[0][9], 500);
-				Beep(notasS[0][10], 500);
-				Beep(notasS[0][11], 1000);
-				Beep(notasS[0][12], 500);
-				Beep(notasS[0][13], 500);
-				Beep(notasS[0][14], 1000);
-				Beep(notasS[0][15], 500);
-				Beep(notasS[0][16], 500);
-				Beep(notasS[0][17], 1000);
-				Beep(notasS[0][18], 500);
-				Beep(notasS[0][19], 500);
-				Beep(notasS[0][20], 1000);
-				Beep(notasS[0][21], 500);
-				Beep(notasS[0][22], 500);
-				Beep(notasS[0][23], 1000);
+			case '4':
+				printf("\tLista de músicas\n");
+				len_vet = ler_arquivo(musicas);
+				int opcmusica, aux = 0;
+				//listagem das músicas
+				for(i = 0; i < len_vet; i++)
+				{
+					printf("\nTítulo: %s - Posição: %i\n", musicas[i].title, i);
+				}
+
+				printf("Qual música você deseja apagar? ");
+				scanf("%i", &opcmusica);
+
+				for(i = opcmusica; i < len_vet - 1; i++) 
+					musicas[i] = musicas[i+1];
+
+				reescrever(musicas, len_vet-1);
 				break;
-			*/
 			default:
 				e ++;
 				break;
@@ -186,7 +163,6 @@ int main(int argc, char** argv)
 	while(e<1);
 	
 	return 0;
-	
 }
 
 int processNote(char note)
@@ -248,12 +224,32 @@ int ler_arquivo(i_song musica[MAX])
 	if(arq != NULL)
 	{
 		int indice = 0;
-		while(fread(&song, sizeof(i_song), 1, arq) == 1)
+		while( fread(&song, sizeof(i_song), 1, arq) == 1 )
 		{
 			musica[indice++] = song;
 		}
 		fclose(arq); // fecha o arquivo
 		return indice;//retorna o numero de elementos achados no arquivo
+	}
+	else
+	{
+		printf("\nErro ao abrir o arquivo para leitura!\n");
+		exit(1); // aborta o programa
+	}
+}
+
+void reescrever(i_song musica[], int tam)
+{
+	// abre o arquivo para leitura
+	FILE * arq = fopen("musicas.txt", "wb");
+
+	if(arq != NULL)
+	{
+		int i;
+		
+		for(i = 0; i<tam; i++)
+			fwrite(&musica[i], sizeof(i_song), 1, arq);
+		fclose(arq); // fecha o arquivo
 	}
 	else
 	{
