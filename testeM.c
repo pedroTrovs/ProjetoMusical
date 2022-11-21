@@ -24,6 +24,7 @@ int ler_arquivo(i_song musica[MAX]);
 void reescrever(i_song musica[], int tam);
 void metronomo(int bpm);
 int confereDur(int d);
+void construirString(char n, int d, char aum);
 
 int main(int argc, char** argv)
 {
@@ -31,9 +32,9 @@ int main(int argc, char** argv)
 
 	double const baseNotes[12] = {32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91, 55.00, 58.27, 61.74};//frequencias basicas a partir da primeira oitava de um teclado
 
-	int q, bpm, i, pos, oct, d, count = -1, s, aux = 0, len_vet;
+	int q, bpm, i, pos, oct, d, s, aux = 0, len_vet, nota;
 
-	char note, type;
+	char note, type, cont;
 
 	//declaração do vetor de musicas salvas
 	i_song musicas[MAX];
@@ -44,6 +45,7 @@ int main(int argc, char** argv)
 
 	char op;
 	int e = 0;
+	
 	do
 	{
 		system("cls");
@@ -116,24 +118,24 @@ int main(int argc, char** argv)
 					}
 					while(confereDur(d) > 0)
 					
-					atual.d = d;
+					atual.d[i] = d;
 					
 					printf("\n Ponto de aumento? (aumenta a duração em 50%)");
 					printf("\n Insira '.' para sim e outra coisa para não");
 					
-					atual.aumento = getche();
+					atual.aumento[i] = getche();
 				}
 
 				fflush(stdin);
 				printf("Título da música: ");
 				gets(atual.title);
 				
-				atual.size = q;//guarda quantas notas tem a música
+				atual.size = q; //guarda quantas notas tem a música
 				gravar_arquivo(atual);
 				break;
 				
 			case '2':
-				printf("\tLista de musicas\n");
+				printf("\tLista de músicas\n");
 				len_vet = ler_arquivo(musicas);
 				for(i = 0; i < len_vet; i++)
 				{
@@ -164,10 +166,10 @@ int main(int argc, char** argv)
 					Beep(musicas[s].f[i], musicas[s].d[i]);
 				}
 				break;
+				
 			case '4':
 				printf("\tLista de músicas\n");
 				len_vet = ler_arquivo(musicas);
-				int opcmusica, aux = 0;
 				
 				//listagem das músicas
 				for(i = 0; i < len_vet; i++)
@@ -176,13 +178,118 @@ int main(int argc, char** argv)
 				}
 
 				printf("Qual música você deseja apagar? ");
-				scanf("%i", &opcmusica);
+				scanf("%i", &s);
 
-				for(i = opcmusica; i < len_vet - 1; i++) 
+				for(i = s; i < len_vet - 1; i++) 
 					musicas[i] = musicas[i+1];
 
 				reescrever(musicas, len_vet-1);
 				break;
+				
+			case '5':
+				printf("\tLista de músicas\n");
+				len_vet = ler_arquivo(musicas);
+				
+				//listagem das músicas
+				for(i = 0; i < len_vet; i++)
+				{
+					printf("\nTítulo: %s - Posição: %i\n", musicas[i].title, i);
+				}
+				
+				printf("Qual música você deseja editar? ");
+				scanf("%i", &s);
+				
+				system("cls");
+				
+				printf("%s selecionada com sucesso!", musicas[s].title);
+				
+				printf("\n1 -> editar andamento (andamento atual: %i bpm)\n2 -> visualizar e editar notas\nOutro valor para voltar", musicas[s].bpm);
+				op = getche();
+				
+				switch(op)
+				{
+					case '1':
+						printf("Defina o andamento em bpm (batidas por minuto) com um valor inteiro: ");
+						scanf("%i", &bpm);
+						
+						metronomo(bpm);
+						
+						musicas[s].bpm = bpm;
+						break;
+						
+					case '2':
+						for(i = 0; i < musicas[s].size; i++)
+						{
+							printf("\nPosição %i: ", i + 1);
+							construirString(musicas[s].n[i], musicas[s].d[i], musicas[s].aumento[i]);
+						}
+						
+						do
+						{
+							printf("Editar nota de posição: ");
+							scanf("%i", &nota);
+							
+							do
+							{
+								printf("\nQue nota é? ");
+								printf("\n c -> dó\n d -> ré\ne -> mi\nf -> fá\ng->sol\na -> lá\nb -> si");
+								note = getche();//recebe um caracter que corresponde a uma nota
+							}
+							while(note < 97 || note > 103); //verifica se a coisa digitada esta entre o intervalo de notas validas
+							pos = processNote(note);
+							
+							printf("\nOitava: ");
+							scanf("%i", &oct);//guarda a oitava na qual a nota esta
+							printf("'#' para sustenido (sobe um semitom), 'b' para bemol (desce um semitom) e qualquer outra coisa para natural\n");
+							type = getche();
+		
+							switch(type)
+							{
+								case '#':
+									if(pos == 11)//11 é a ultima "casa", então ele não pode subir uma posição
+									{
+										oct ++; 
+										pos = 0; // aqui ele vai pra posição 0 e sobe uma oitava
+									}
+									else
+										pos ++;//caso for natural ele vai para a proxima posição no vetor de notas
+									break;
+								case 'b':
+									if(pos == 0) //nesse caso ele não pode descer mais
+									{
+										oct --;
+										pos = 11; //então ele vai para ultima posição do vetor e desce uma oitava
+									}
+									else 
+										pos --;//nesse caso ele vai pra posição anterior a do vetor de notas
+									break;
+							}
+							//songs.f[i] = baseNotes[pos]*pow(2, oct); //cálculo da oitava, setar a frequência na oitava exata
+							
+							musicas[s].n[nota] = pos;
+							
+							do
+							{
+								printf("\nInsira a duração: ");
+								printf("\n1 -> semibreve (dura 4 batidas)\n2 -> mínima (dura 2 batidas)\n4 -> semínima (dura 1 batida)\n8 -> colcheia (dura meia batida)\n16 -> semicolcheia (dura um quarto de batida)");
+								scanf("%i", &d);
+							}
+							while(confereDur(d) > 0)
+							
+							atual.d[nota] = d;
+							
+							printf("\n Ponto de aumento? (aumenta a duração em 50%)");
+							printf("\n Insira '.' para sim e outra coisa para não");
+							
+							atual.aumento[nota] = getche();
+							
+							printf("Nota %i atualizada com sucesso!", )
+						}
+						while(cont == '1')
+				}
+				
+				break;
+				
 			default:
 				e ++;
 				break;
@@ -312,4 +419,89 @@ int confereDur(int d)
 	}
 	
 	return r;
+}
+
+void construirString(int n, int d, char aum)
+{
+	switch(n)
+	{
+		case '0':
+			printf("Dó natural");
+			break;
+		
+		case '1':
+			printf("Dó sustenido / Ré bemol");
+			break;
+			
+		case '2':
+			printf("Ré natural");
+			break;
+			
+		case '3':
+			printf("Ré sustenido / Mi bemol");
+			break;
+		
+		case '4':
+			printf("Mi natural / Fá bemol");
+			break;
+			
+		case '5':
+			printf("Fá natural");
+			break;
+			
+		case '6':
+			printf("Fá sustenido / Sol bemol");
+			break;
+			
+		case '7':
+			printf("Sol natural");
+			break;
+		
+		case '8':
+			printf("Sol sustenido / Lá bemol");
+			break;
+			
+		case '9':
+			printf("Lá natural");
+			break;
+			
+		case '10':
+			printf("Lá sustenido / Si bemol");
+			break;
+		
+		case '11':
+			printf("Si natural / Dó bemol");
+	}
+	
+	printf(" | ");
+	
+	switch(d)
+	{
+		case '1':
+			printf("Semibreve (4 batidas)");
+			break;
+		
+		case '2':
+			printf("Mínima (2 batidas)");
+			break;
+			
+		case '4':
+			printf("Semínima (1 batida)");
+			break;
+			
+		case '8':
+			printf("Colcheia (meia batida)");
+			break;
+		
+		case '16':
+			printf("Semicolcheia (um quarto de batida)");
+			break;
+	}
+	
+	if(aum == '.')
+	{
+		printf("com ponto de aumento");
+	}
+	
+	printf(";");
 }
