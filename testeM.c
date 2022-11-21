@@ -6,12 +6,14 @@
 
 #define MAX 50 
 
-//declaÃ§Ã£o da struct song
+//declaração da struct song
 typedef struct song
 {
 	char title[30];
-	double f[50]; //frequencias
-	double d[50]; //duraÃ§Ã£o de uma nota
+	int bpm;
+	int n[50]; //posições da nota no vetor baseNotes
+	int d[50]; //durações escolhidas
+	char aumento[50];
 	int size;
 } i_song;
 
@@ -20,6 +22,8 @@ int processNote(char note);
 void gravar_arquivo(i_song musica);
 int ler_arquivo(i_song musica[MAX]);
 void reescrever(i_song musica[], int tam);
+void metronomo(int bpm);
+int confereDur(int d);
 
 int main(int argc, char** argv)
 {
@@ -27,102 +31,125 @@ int main(int argc, char** argv)
 
 	double const baseNotes[12] = {32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91, 55.00, 58.27, 61.74};//frequencias basicas a partir da primeira oitava de um teclado
 
-	int const baseRatio = 500;//duraÃ§Ã£o base em milisegundos
-
-	int n, i, pos, oct, count = -1, s, aux = 0, len_vet;
+	int q, bpm, i, pos, oct, d, count = -1, s, aux = 0, len_vet;
 
 	char note, type;
 
-	//declaraÃ§Ã£o do vetor de musicas salvas
+	//declaração do vetor de musicas salvas
 	i_song musicas[MAX];
 
-	i_song songs;
+	i_song atual; //música atual
 	
-	double ratio; //duraÃ§Ã£o de uma nota
+	double ratio; //duração de uma nota
 
 	char op;
 	int e = 0;
 	do
 	{
 		system("cls");
-		printf("\nCriar mï¿½sica - 1\nConsultar mï¿½sicas - 2\nTocar mï¿½sica - 3\nSair - qlqr outra coisa");
-		printf("\n\nOpï¿½ï¿½o: ");
+		printf("\nCriar música - 1\nConsultar músicas - 2\nTocar música - 3\nSair - qualquer outra coisa outra coisa");
+		printf("\n\nOpção: ");
 		op = getche();
 		printf("\n");
 		switch(op)
 		{
-			case '1': //criar mÃºsica
-				printf("\nCreate song");
-				printf("\nNumber of notes: ");
-				scanf("%i", &n);
-				for(i = 0; i < n; i++)
+			case '1': //criar música
+				printf("\nCriar música");
+				
+				printf("Defina o andamento em bpm (batidas por minuto) com um valor inteiro: ");
+				scanf("%i", &bpm);
+				
+				metronomo(bpm);
+				
+				atual.bpm = bpm;
+				
+				printf("\nNúmero de notas: ");
+				scanf("%i", &q);
+				
+				for(i = 0; i < q; i++)
 				{
 					system("cls");
 					do
 					{
-						printf("\nWhich note is it? ");
+						printf("\nQue nota é? ");
+						printf("\n c -> dó\n d -> ré\ne -> mi\nf -> fá\ng->sol\na -> lá\nb -> si");
 						note = getche();//recebe um caracter que corresponde a uma nota
 					}
 					while(note < 97 || note > 103); //verifica se a coisa digitada esta entre o intervalo de notas validas
 					pos = processNote(note);
 					
-					printf("\nOctave: ");
+					printf("\nOitava: ");
 					scanf("%i", &oct);//guarda a oitava na qual a nota esta
-					printf("'#' for sharp, 'b' for flat and anything else for natural\n");
+					printf("'#' para sustenido (sobe um semitom), 'b' para bemol (desce um semitom) e qualquer outra coisa para natural\n");
 					type = getche();
 
 					switch(type)
 					{
 						case '#':
-							if(pos == 11)//11 Ã© a ultima "casa", entÃ£o ele nÃ£o pode subir uma posiÃ§Ã£o
+							if(pos == 11)//11 é a ultima "casa", então ele não pode subir uma posição
 							{
 								oct ++; 
-								pos = 0; // aqui ele vai pra posiÃ§Ã£o 0 e sobe uma oitava
+								pos = 0; // aqui ele vai pra posição 0 e sobe uma oitava
 							}
 							else
-								pos ++;//caso for natural ele vai para a proxima posiÃ§Ã£o no vetor de notas
+								pos ++;//caso for natural ele vai para a proxima posição no vetor de notas
 							break;
 						case 'b':
-							if(pos == 0) //nesse caso ele nÃ£o pode descer mais
+							if(pos == 0) //nesse caso ele não pode descer mais
 							{
 								oct --;
-								pos = 11; //entÃ£o ele vai para ultima posiÃ§Ã£o do vetor e desce uma oitava
+								pos = 11; //então ele vai para ultima posição do vetor e desce uma oitava
 							}
 							else 
-								pos --;//nesse caso ele vai pra posiÃ§Ã£o anterior a do vetor de notas
+								pos --;//nesse caso ele vai pra posição anterior a do vetor de notas
 							break;
 					}
-					songs.f[i] = baseNotes[pos]*pow(2, oct); //calculo da oitava, setar a frequencia na oitava exata
-
-					printf("\nInsert duration ratio: ");
-					scanf("%lf", &ratio);
-					songs.d[i] = ratio * baseRatio;//escolha da duraÃ§Ã£o da nota
+					//songs.f[i] = baseNotes[pos]*pow(2, oct); //cálculo da oitava, setar a frequência na oitava exata
+					
+					atual.n[i] = pos;
+					
+					do
+					{
+						printf("\nInsira a duração: ");
+						printf("\n1 -> semibreve (dura 4 batidas)\n2 -> mínima (dura 2 batidas)\n4 -> semínima (dura 1 batida)\n8 -> colcheia (dura meia batida)\n16 -> semicolcheia (dura um quarto de batida)");
+						scanf("%i", &d);
+					}
+					while(confereDur(d) > 0)
+					
+					atual.d = d;
+					
+					printf("\n Ponto de aumento? (aumenta a duração em 50%)");
+					printf("\n Insira '.' para sim e outra coisa para não");
+					
+					atual.aumento = getche();
 				}
 
 				fflush(stdin);
-				printf("Songs's title: ");
-				gets(songs.title);
-				songs.size = n;//guarda quantas notas tem a musica
-				gravar_arquivo(songs);
+				printf("Título da música: ");
+				gets(atual.title);
+				
+				atual.size = q;//guarda quantas notas tem a música
+				gravar_arquivo(atual);
 				break;
+				
 			case '2':
 				printf("\tLista de musicas\n");
 				len_vet = ler_arquivo(musicas);
 				for(i = 0; i < len_vet; i++)
 				{
-					printf("\nTï¿½tulo: %s - Posiï¿½ï¿½o: %i\n", musicas[i].title, i);
+					printf("\nTítulo: %s - Posição: %i\n", musicas[i].title, i);
 				}
 				system("pause");
 				break;
 
-			case '3': //tocar mÃºsicas
+			case '3': //tocar mmúsica
 				ler_arquivo(musicas);
-				printf("Posiï¿½ï¿½o da mï¿½sica: ");
-				scanf("%i", &s);//pega a posiÃ§Ã£o da mÃºsica
+				printf("Posição da música: ");
+				scanf("%i", &s);//pega a posição da música
 
 				system("cls");
 				
-				//contador para iniciar a mÃºsica
+				//contador para iniciar a música
 				Sleep(500);
 				printf("1\n");
 				Sleep(500);
@@ -131,23 +158,24 @@ int main(int argc, char** argv)
 				printf("3\n");
 				Sleep(500);
 
-				printf("\nPlaying %s", musicas[s].title);
+				printf("\nTocando %s", musicas[s].title);
 				for(i = 0; i < musicas[s].size; i++)
 				{
 					Beep(musicas[s].f[i], musicas[s].d[i]);
 				}
 				break;
 			case '4':
-				printf("\tLista de mÃºsicas\n");
+				printf("\tLista de músicas\n");
 				len_vet = ler_arquivo(musicas);
 				int opcmusica, aux = 0;
-				//listagem das mÃºsicas
+				
+				//listagem das músicas
 				for(i = 0; i < len_vet; i++)
 				{
-					printf("\nTÃ­tulo: %s - PosiÃ§Ã£o: %i\n", musicas[i].title, i);
+					printf("\nTítulo: %s - Posição: %i\n", musicas[i].title, i);
 				}
 
-				printf("Qual mÃºsica vocÃª deseja apagar? ");
+				printf("Qual música você deseja apagar? ");
 				scanf("%i", &opcmusica);
 
 				for(i = opcmusica; i < len_vet - 1; i++) 
@@ -208,7 +236,7 @@ void gravar_arquivo(i_song musica)
 		fwrite(&musica, sizeof(i_song), 1, arq);
 		fclose(arq);
 	}
-	else //se caso ele nÃ£o consiga abrir o arquivo para gravaÃ§Ã£o
+	else //se caso ele nÃ£o consiga abrir o arquivo para gravação
 	{
 		printf("\nErro ao abrir o arquivo!\n");
 		exit(1); // aborta o programa
@@ -253,7 +281,35 @@ void reescrever(i_song musica[], int tam)
 	}
 	else
 	{
-		printf("\nErro ao abrir o arquivo para leitura!\n");
+		printf("\nErro ao abrir o arquivo!\n");
 		exit(1); // aborta o programa
 	}
+}
+
+void metronomo(int bpm)
+{
+	float b = 60/bpm * 1000;
+	int i;
+	
+	for(i = 0; i < 4; i++)
+	{
+		Beep(440, b);
+	}
+}
+
+int confereDur(int d)
+{
+	int valido[5] = {1, 2, 4, 8, 16}, i;
+	int r = 0;
+	
+	for(i = 0; i < 5; i++)
+	{
+		if(d == valido[i])
+		{
+			r++;
+			break;
+		}
+	}
+	
+	return r;
 }
